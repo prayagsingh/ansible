@@ -1,0 +1,35 @@
+---
+- name: Update Docker Server Engine
+  hosts: "{{ host }}"
+  # remote_user: the user Ansible will use to ssh to the server
+  remote_user: "{{ ssh_user }}" #"root" #sudo
+  become: yes # need sudo permission to install docker and update packages
+
+  vars:
+    docker_package_state: latest   # either this or docker_package
+    docker_edition: ce
+    #docker_package: "docker-{{ docker_edition }}=20.10.2"
+    docker_compose_version: "1.27.4"
+    docker_users:
+      - "{{ USER }}"
+
+  roles:
+    - geerlingguy.docker
+
+# need to test it. trying to update docker-ce and docker-cli at the same time else need to update docker_edition to either ce or ce-cli
+- name: Update Docker Cli Engine
+  hosts: "{{ host }}"
+  # remote_user: the user Ansible will use to ssh to the server
+  remote_user: "{{ ssh_user }}" #"root" #sudo
+  become: yes # need sudo permission to install docker and update packages
+
+  vars:
+    docker_package_state: latest   # either this or docker_package
+    docker_edition: ce-cli
+    #docker_package: "docker-{{ docker_edition }}=20.10.2"
+    docker_compose_version: "1.27.4"
+    docker_users:
+      - "{{ USER }}"
+
+  roles:
+    - geerlingguy.docker
