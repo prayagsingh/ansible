@@ -1,0 +1,5 @@
+user_name: prayag # change it accordingly
+group_name: nm
+user_shell: /bin/bash
+copy_local_key: "{{ lookup('file', lookup('env','HOME') + '/.ssh/PUBLICKEY_NAME') }}" # change the PUBLICKEY_NAME with a valid publickey
+sys_packages: [ 'tree' ]
