@@ -1,0 +1,75 @@
+# This file is used to create a new user on Virtual-Machine
+
+---
+- name: "Creating user with sudo priv"
+  hosts: "{{ host }}"
+  become: true
+  remote_user: root
+  vars_files:
+    - ./vars/default.yml
+
+  tasks:
+    - name: Install Prerequisites
+      # block and rescue are like exception handling
+      block:
+        - name: Updating cache
+          apt: name=aptitude update_cache=yes state=latest force_apt_get=yes
+      rescue:
+        - name: Rescue block (perform recovery)
+          debug:
+            msg: "Creating directory"
+
+        - name: create /var/lib/apt/lists/
+          file:
+            path: /var/lib/apt/lists/
+            state: directory
+            mode: '0755'
+          check_mode: no
+
+        - name: Updating cache
+          apt: name=aptitude update_cache=yes state=latest force_apt_get=yes
+
+    - name: Make sure we have a '{{ group_name }}' group
+      group:
+        name: "{{ group_name }}"
+        state: present
+
+    - name: Allow '{{ group_name }}' group to have passwordless sudo
+      lineinfile:
+        path: /etc/sudoers
+        state: present
+        regexp: '^%{{ group_name }}'
+        line: '%{{ group_name }} ALL=(ALL) NOPASSWD: ALL'
+        validate: '/usr/sbin/visudo -cf %s'
+
+  # User + Key Setup
+    - name: "Create user"
+      user:
+        name: "{{ user_name }}"
+        state: present
+        groups: "{{ group_name }}"
+        append: true
+        create_home: true
+        shell: "{{ user_shell }}"
+        #generate_ssh_key: "{{ user_generate_ssh_key }}"
+        #shell: "{{ user_shell }}"
+
+    - name: Set authorized key for remote user
+      authorized_key:
+        user: "{{ user_name }}"
+        state: present
+        key: "{{ copy_local_key }}"
+
+    - name: Disable password authentication for root
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        state: present
+        regexp: '^#?PermitRootLogin'
+        line: 'PermitRootLogin prohibit-password'
+
+  # Install Packages
+    - name: Update apt
+      apt: update_cache=yes
+
+    - name: Install required system packages
+      apt: name={{ sys_packages }} state=latest
